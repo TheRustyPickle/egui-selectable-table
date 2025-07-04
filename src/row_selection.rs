@@ -539,4 +539,18 @@ where
     pub const fn set_select_full_row(&mut self, status: bool) {
         self.select_full_row = status;
     }
+
+    /// Returns the total number of currently selected rows.
+    ///
+    /// # Returns:
+    /// - `usize`: The number of selected rows.
+    ///
+    /// # Example:
+    /// ```rust,ignore
+    /// let selected_count = table.get_total_selected_rows();
+    /// println!("{} rows selected", selected_count);
+    /// ```
+    pub fn get_total_selected_rows(&mut self) -> usize {
+        self.active_rows.len()
+    }
 }
