@@ -43,25 +43,25 @@ where
         self.active_rows.insert(id);
     }
 
-    /// Marks a row as selected, optionally selecting a specific column within the row.
+    /// Marks a row as selected, optionally selecting specific columns within the row.
     ///
     /// This method updates the table's internal state to mark the row with the given `id` as active.
-    /// If a column is provided, only that column is marked as selected for the row.
-    /// If no column is provided, all columns in the row are marked as selected.
+    /// If a list of columns is provided, only those columns are marked as selected for the row.
+    /// If no column list is provided, all columns in the row are marked as selected.
     ///
     /// This method is a lower-level API intended for manually controlling selection state.
     /// For general usage, prefer using the built-in selection behaviors.
     ///
     /// # Parameters:
     /// - `id`: The unique identifier of the row to mark as selected.
-    /// - `column`: An optional reference to the column to be marked as selected within the row. If `None`, all columns in the row are selected.
+    /// - `column`: An optional list of columns (`Vec<F>`) to mark as selected within the row. If `None`, all columns are selected.
     ///
     /// # Example:
     /// ```rust,ignore
-    /// table.mark_row_as_selected(42, Some(&"Name"));
+    /// table.mark_row_as_selected(42, Some(vec!["Name", "Age"]));
     /// table.mark_row_as_selected(43, None); // Selects all columns in row 43
     /// ```
-    pub fn mark_row_as_selected(&mut self, id: i64, column: Option<&F>) {
+    pub fn mark_row_as_selected(&mut self, id: i64, column: Option<Vec<F>>) {
         let Some(target_index) = self.indexed_ids.get(&id) else {
             return;
         };
@@ -72,10 +72,10 @@ where
 
         self.active_rows.insert(id);
 
-        if let Some(column_name) = column {
-            self.active_columns.insert(column_name.clone());
+        if let Some(column_list) = column {
+            self.active_columns.extend(column_list.clone());
 
-            target_row.selected_columns.insert(column_name.clone());
+            target_row.selected_columns.extend(column_list);
         } else {
             self.active_columns.extend(self.all_columns.clone());
 
