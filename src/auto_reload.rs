@@ -10,7 +10,7 @@ pub struct AutoReload {
 impl AutoReload {
     /// Increase the current reload count and return bool based on if it is equal or above the count it is
     /// supposed to reload at
-    pub(crate) fn increment_count(&mut self) -> bool {
+    pub(crate) const fn increment_count(&mut self) -> bool {
         self.reload_count += 1;
         if let Some(count) = self.reload_after {
             let reload = self.reload_count >= count;
@@ -77,7 +77,7 @@ where
     /// table.set_auto_reload(Some(1000)); // Reload after 1000 updates.
     /// table.set_auto_reload(None); // Disable auto-reloading.
     /// ```
-    pub fn set_auto_reload(&mut self, count: Option<u32>) {
+    pub const fn set_auto_reload(&mut self, count: Option<u32>) {
         self.auto_reload.reload_after = count;
         self.auto_reload.reload_count = 0;
     }

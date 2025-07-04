@@ -1,5 +1,6 @@
 use egui::ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use egui::Ui;
+use std::fmt::Write as _;
 use std::hash::Hash;
 
 use crate::{ColumnOperations, ColumnOrdering, SelectableRow, SelectableTable};
@@ -24,25 +25,62 @@ where
         self.active_columns.insert(column_name.clone());
         self.active_rows.insert(id);
 
+        // Should never panic, if it does, either a library issue or it was used incorrectly
         let target_index = self.indexed_ids.get(&id).expect("target_index not found");
+        let target_row = self
+            .formatted_rows
+            .get_mut(*target_index)
+            .expect("target_row not found");
 
         if self.select_full_row {
             self.active_columns.extend(self.all_columns.clone());
 
-            self.formatted_rows
-                .get_mut(*target_index)
-                .expect("Row not found")
-                .selected_columns
-                .extend(self.all_columns.clone());
+            target_row.selected_columns.extend(self.all_columns.clone());
         } else {
-            self.formatted_rows
-                .get_mut(*target_index)
-                .expect("Row not found")
-                .selected_columns
-                .insert(column_name.clone());
+            target_row.selected_columns.insert(column_name.clone());
         }
 
         self.active_rows.insert(id);
+    }
+
+    /// Marks a row as selected, optionally selecting a specific column within the row.
+    ///
+    /// This method updates the table's internal state to mark the row with the given `id` as active.
+    /// If a column is provided, only that column is marked as selected for the row.
+    /// If no column is provided, all columns in the row are marked as selected.
+    ///
+    /// This method is a lower-level API intended for manually controlling selection state.
+    /// For general usage, prefer using the built-in selection behaviors.
+    ///
+    /// # Parameters:
+    /// - `id`: The unique identifier of the row to mark as selected.
+    /// - `column`: An optional reference to the column to be marked as selected within the row. If `None`, all columns in the row are selected.
+    ///
+    /// # Example:
+    /// ```rust,ignore
+    /// table.mark_row_as_selected(42, Some(&"Name"));
+    /// table.mark_row_as_selected(43, None); // Selects all columns in row 43
+    /// ```
+    pub fn mark_row_as_selected(&mut self, id: i64, column: Option<&F>) {
+        let Some(target_index) = self.indexed_ids.get(&id) else {
+            return;
+        };
+
+        let Some(target_row) = self.formatted_rows.get_mut(*target_index) else {
+            return;
+        };
+
+        self.active_rows.insert(id);
+
+        if let Some(column_name) = column {
+            self.active_columns.insert(column_name.clone());
+
+            target_row.selected_columns.insert(column_name.clone());
+        } else {
+            self.active_columns.extend(self.all_columns.clone());
+
+            target_row.selected_columns.extend(self.all_columns.clone());
+        }
     }
 
     pub(crate) fn select_dragged_row_cell(
@@ -225,7 +263,7 @@ where
             .get(index)
             .expect("Current row not found");
 
-        // if for example drag started on row 5 and ended on row 10 but missed drag on row 7
+        // If for example drag started on row 5 and ended on row 10 but missed drag on row 7
         // Mark the rows as selected till the drag start row is hit (if recursively going that way)
         let unselected_row = if (check_previous && index >= drag_start)
             || (!check_previous && index <= drag_start)
@@ -404,7 +442,7 @@ where
 
         let mut column_max_length = HashMap::new();
 
-        // Iter through all the rows and find the rows that have at least one column as selected
+        // Iter through all the rows and find the rows that have at least one column as selected.
         // Keep track of the biggest length of a value of a column
         // active rows cannot be used here because hashset does not maintain an order.
         // So itering will give the rows in a different order than what is shown in the ui
@@ -432,7 +470,7 @@ where
 
         let mut to_copy = String::new();
 
-        // Target is to ensure a fixed length after each column value of a row
+        // Target is to ensure a fixed length after each column value of a row.
         // If for example highest len is 10 but the current row's
         // column value is 5, we will add the column value and add 5 more space after that
         // to ensure alignment
@@ -444,7 +482,8 @@ where
                     && row.selected_columns.contains(&ongoing_column)
                 {
                     let column_text = ongoing_column.column_text(&row.row_data);
-                    row_text += &format!(
+                    let _ = write!(
+                        row_text,
                         "{:<width$}",
                         column_text,
                         width = column_max_length[&ongoing_column] + 1
@@ -452,7 +491,8 @@ where
                 } else if self.active_columns.contains(&ongoing_column)
                     && !row.selected_columns.contains(&ongoing_column)
                 {
-                    row_text += &format!(
+                    let _ = write!(
+                        row_text,
                         "{:<width$}",
                         "",
                         width = column_max_length[&ongoing_column] + 1
@@ -496,7 +536,7 @@ where
     /// ```rust,ignore
     /// table.set_select_full_row(true); // Enable full row selection.
     /// ```
-    pub fn set_select_full_row(&mut self, status: bool) {
+    pub const fn set_select_full_row(&mut self, status: bool) {
         self.select_full_row = status;
     }
 }

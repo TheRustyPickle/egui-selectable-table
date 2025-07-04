@@ -179,8 +179,7 @@ where
 /// # Type Parameters
 /// * `Row` - The type representing each row in the table.
 /// * `F` - A type used to identify columns, often an enum or field type.
-/// * `Conf` - Configuration type for additional table settings passed by the user. This is made available anytime
-///    when creating or modifying rows
+/// * `Conf` - Configuration type for additional table settings passed by the user. This is made available anytime when creating or modifying rows
 pub struct SelectableTable<Row, F, Conf>
 where
     Row: Clone + Send + Sync,
@@ -387,7 +386,7 @@ where
                         table = table.vertical_scroll_offset(offset);
                         ctx.request_repaint();
                     }
-                };
+                }
 
                 let output = table
                     .header(20.0, |header| {
@@ -416,7 +415,7 @@ where
                     table = table.vertical_scroll_offset(offset);
                     ctx.request_repaint();
                 }
-            };
+            }
 
             let output = table
                 .header(20.0, |header| {
@@ -604,8 +603,7 @@ where
     ///
     /// # Performance:
     /// - Should be used sparingly for large datasets as frequent calls can lead to performance issues.
-    /// - Consider calling after every X amount row updates, based on how frequently new rows are being
-    ///     added or use [`auto_scroll`](#method.auto_scroll) for automatic reload.
+    /// - Consider calling after every X amount row updates, based on how frequently new rows are being added or use [`auto_scroll`](#method.auto_scroll) for automatic reload.
     ///
     /// # Example:
     /// ```rust,ignore
@@ -717,7 +715,7 @@ where
     ///
     /// # Returns:
     /// - `usize`: The number of rows that are formatted and ready for display.
-    pub fn total_displayed_rows(&self) -> usize {
+    pub const fn total_displayed_rows(&self) -> usize {
         self.formatted_rows.len()
     }
 
