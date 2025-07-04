@@ -45,12 +45,8 @@ where
 
     /// Marks a row as selected, optionally selecting specific columns within the row.
     ///
-    /// This method updates the table's internal state to mark the row with the given `id` as active.
     /// If a list of columns is provided, only those columns are marked as selected for the row.
     /// If no column list is provided, all columns in the row are marked as selected.
-    ///
-    /// This method is a lower-level API intended for manually controlling selection state.
-    /// For general usage, prefer using the built-in selection behaviors.
     ///
     /// # Parameters:
     /// - `id`: The unique identifier of the row to mark as selected.

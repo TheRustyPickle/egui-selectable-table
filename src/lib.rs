@@ -499,9 +499,15 @@ where
 
     /// Recreates the rows shown in the UI for the next frame load.
     ///
+    /// # Important:
+    /// - Any direct modifications made using [`modify_shown_row`](#method.modify_shown_row)
+    ///   will be **cleared** when this is called.
+    ///   To preserve changes, use [`add_modify_row`](#method.add_modify_row) to update row data instead.
+    ///
     /// # Performance:
-    /// - Should be used sparingly for large datasets as frequent calls can lead to performance issues.
-    /// - Consider calling after every X amount row updates, based on how frequently new rows are being added or use [`auto_scroll`](#method.auto_scroll) for automatic reload.
+    /// - Should be used sparingly for large datasets, as frequent calls can lead to performance issues.
+    /// - Consider calling after every X number of row updates, depending on update frequency,
+    ///   or use [`auto_reload`](#method.auto_reload) for automatic reload.
     ///
     /// # Example:
     /// ```rust,ignore
@@ -512,6 +518,42 @@ where
         self.active_rows.clear();
         self.active_columns.clear();
         self.sort_rows();
+    }
+
+    /// Recreates the rows shown in the UI for the next frame load.
+    ///
+    /// This function refreshes the internal row state by clearing and re-sorting the rows
+    /// similar to [`recreate_rows`](#method.recreate_rows), but it **preserves** the currently
+    /// selected rows and re-applies the active column selection to them.
+    ///
+    /// Useful when the UI needs to be refreshed without resetting user interaction state.
+    ///
+    /// # Important:
+    /// - Any direct modifications made to `formatted_rows` using [`modify_shown_row`](#method.modify_shown_row)
+    ///   will be **cleared** when this is called.
+    ///   To preserve changes, use [`add_modify_row`](#method.add_modify_row) to update row data instead.
+    ///
+    /// # Performance:
+    /// - Should be used sparingly for large datasets, as frequent calls can lead to performance issues.
+    /// - Consider calling after every X number of row updates, depending on update frequency,
+    ///   or use [`auto_reload`](#method.auto_reload) for automatic reload.
+    ///
+    /// # Example:
+    /// ```rust,ignore
+    /// table.recreate_rows_no_unselect();
+    /// ```
+    pub fn recreate_rows_no_unselect(&mut self) {
+        self.formatted_rows.clear();
+        self.sort_rows();
+
+        for row in &self.active_rows {
+            let Some(target_index) = self.indexed_ids.get(row) else {
+                continue;
+            };
+            self.formatted_rows[*target_index]
+                .selected_columns
+                .clone_from(&self.active_columns);
+        }
     }
 
     /// The first column that was passed by the user

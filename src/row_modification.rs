@@ -19,7 +19,7 @@ where
     Conf: Default,
 {
     /// Modify or add rows to the table. Changes are not immediately reflected in the UI.
-    /// You must call [`recreate_rows`](#method.recreate_rows) to apply these changes visually.
+    /// You must call [`recreate_rows`](#method.recreate_rows) or [`recreate_rows_no_unselect`](#method.recreate_rows_no_unselect) to apply these changes visually.
     ///
     /// # Parameters:
     /// - `table`: A closure that takes a mutable reference to the rows and optionally returns a new row.
@@ -74,10 +74,15 @@ where
 
     /// Modify only the rows currently displayed in the UI.
     ///
+    /// This provides direct access to the currently formatted rows for lightweight updates.
+    ///
     /// # Important:
-    /// - This does not require calling `recreate_rows` to reflect changes.
-    /// - Should not be used when rows are frequently recreated, as data might be lost.
-    /// - Does not contribute toward `auto_reload` count.
+    /// - This does **not** require calling `recreate_rows` to reflect changes in the UI.
+    /// - **Do not delete rows** from inside this closure — doing so will **cause a panic** and break internal assumptions.
+    ///   To safely delete a row, use [`add_modify_row`](#method.add_modify_row) and then call [`recreate_rows`](#method.recreate_rows) or [`recreate_rows_no_unselect`](#method.recreate_rows_no_unselect).
+    /// - Can be used alongside [`add_modify_row`](#method.add_modify_row) to show updated data immediately.
+    ///   When row recreation happens, the modified data will be preserved as long as it's updated via [`add_modify_row`](#method.add_modify_row).
+    /// - Does not contribute toward [`auto_reload`](#method.auto_reload) count.
     ///
     /// # Parameters:
     /// - `table`: A closure that takes a mutable reference to the currently formatted rows and an index map.
@@ -85,11 +90,10 @@ where
     /// # Example:
     /// ```rust,ignore
     /// table.modify_shown_row(|formatted_rows, indexed_ids| {
-    /// let row_id = 0;
-    /// let target_index = indexed_ids.get(row_id).unwrap();
-    /// let row = formatted_rows.get_mut(target_index).unwrap();
-    /// /* modify rows */
-    ///
+    ///     let row_id = 0;
+    ///     let target_index = indexed_ids.get(&row_id).unwrap();
+    ///     let row = formatted_rows.get_mut(*target_index).unwrap();
+    ///     // Safely modify row contents here
     /// });
     /// ```
     pub fn modify_shown_row<Fn>(&mut self, mut rows: Fn)
@@ -103,7 +107,7 @@ where
     ///
     /// This method inserts the row as-is at the end of the table, assigns it a unique ID, and
     /// returns it as a `SelectableRow`. This does **not**
-    /// require calling `recreate_rows` for the row to appear in the UI.
+    /// require calling [`recreate_rows`](#method.recreate_rows) for the row to appear in the UI.
     ///
     /// # Parameters:
     /// - `row`: The data to insert into the table.
