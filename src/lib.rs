@@ -1,5 +1,6 @@
 mod auto_reload;
 mod auto_scroll;
+mod row_modification;
 mod row_selection;
 
 use auto_reload::AutoReload;
@@ -7,7 +8,6 @@ pub use auto_scroll::AutoScroll;
 use egui::ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use egui::{Event, Key, Label, Response, ScrollArea, Sense, Ui};
 use egui_extras::{Column, TableBuilder, TableRow};
-use rayon::prelude::*;
 use std::cmp::Ordering;
 use std::hash::Hash;
 
@@ -179,8 +179,7 @@ where
 /// # Type Parameters
 /// * `Row` - The type representing each row in the table.
 /// * `F` - A type used to identify columns, often an enum or field type.
-/// * `Conf` - Configuration type for additional table settings passed by the user. This is made available anytime
-///    when creating or modifying rows
+/// * `Conf` - Configuration type for additional table settings passed by the user. This is made available anytime when creating or modifying rows
 pub struct SelectableTable<Row, F, Conf>
 where
     Row: Clone + Send + Sync,
@@ -234,9 +233,10 @@ where
     /// Additional Parameters passed by you, available when creating new rows or header. Can
     /// contain anything implementing the `Default` trait
     pub config: Conf,
-
     /// Whether to add the row serial column to the table
     add_serial_column: bool,
+    /// The row height for the table, defaults to 25.0
+    row_height: f32,
 }
 
 impl<Row, F, Conf> SelectableTable<Row, F, Conf>
@@ -294,6 +294,7 @@ where
             horizontal_scroll: false,
             config: Conf::default(),
             add_serial_column: false,
+            row_height: 25.0,
         }
     }
 
@@ -387,14 +388,14 @@ where
                         table = table.vertical_scroll_offset(offset);
                         ctx.request_repaint();
                     }
-                };
+                }
 
                 let output = table
                     .header(20.0, |header| {
                         self.build_head(header);
                     })
                     .body(|body| {
-                        body.rows(25.0, self.formatted_rows.len(), |row| {
+                        body.rows(self.row_height, self.formatted_rows.len(), |row| {
                             let index = row.index();
                             self.build_body(row, index);
                         });
@@ -416,14 +417,14 @@ where
                     table = table.vertical_scroll_offset(offset);
                     ctx.request_repaint();
                 }
-            };
+            }
 
             let output = table
                 .header(20.0, |header| {
                     self.build_head(header);
                 })
                 .body(|body| {
-                    body.rows(25.0, self.formatted_rows.len(), |row| {
+                    body.rows(self.row_height, self.formatted_rows.len(), |row| {
                         let index = row.index();
                         self.build_body(row, index);
                     });
@@ -478,110 +479,6 @@ where
         self.handle_table_body(row, &row_data);
     }
 
-    /// Modify or add rows to the table. Changes are not immediately reflected in the UI.
-    /// You must call [`recreate_rows`](#method.recreate_rows) to apply these changes visually.
-    ///
-    /// # Parameters:
-    /// - `table`: A closure that takes a mutable reference to the rows and optionally returns a new row.
-    ///   If a row is returned, it will be added to the table.
-    ///
-    /// # Auto Reload:
-    /// - Use [`auto_reload`](#method.auto_reload) to automatically refresh the UI after a specified
-    ///   number of row modifications or additions.
-    ///
-    /// # Returns
-    /// * `Option<i64>` - The row id that is used internally for the new row
-    ///
-    /// # Example:
-    /// ```rust,ignore
-    /// let new_row_id = table.add_modify_row(|rows| {
-    ///     let my_row = rows.get_mut(row_id).unwrap();
-    ///     // modify your row as necessary
-    ///
-    ///     let new_row = MyRow {
-    ///         // Define your row values
-    ///     };
-    ///     Some(new_row) // Optionally add a new row
-    /// });
-    /// ```
-    pub fn add_modify_row<Fn>(&mut self, table: Fn) -> Option<i64>
-    where
-        Fn: FnOnce(&mut HashMap<i64, SelectableRow<Row, F>>) -> Option<Row>,
-    {
-        let new_row = table(&mut self.rows);
-
-        let mut to_return = None;
-
-        if let Some(row) = new_row {
-            let selected_columns = HashSet::new();
-            let new_row = SelectableRow {
-                row_data: row,
-                id: self.last_id_used,
-                selected_columns,
-            };
-            to_return = Some(self.last_id_used);
-            self.rows.insert(new_row.id, new_row);
-            self.last_id_used += 1;
-        }
-
-        let reload = self.auto_reload.increment_count();
-
-        if reload {
-            self.recreate_rows();
-        }
-        to_return
-    }
-
-    /// Modify only the rows currently displayed in the UI.
-    ///
-    /// # Important:
-    /// - This does not require calling `recreate_rows` to reflect changes.
-    /// - Should not be used when rows are frequently recreated, as data might be lost.
-    /// - Does not contribute toward `auto_reload` count.
-    ///
-    /// # Parameters:
-    /// - `table`: A closure that takes a mutable reference to the currently formatted rows and an index map.
-    ///
-    /// # Example:
-    /// ```rust,ignore
-    /// table.modify_shown_row(|formatted_rows, indexed_ids| {
-    /// let row_id = 0;
-    /// let target_index = indexed_ids.get(row_id).unwrap();
-    /// let row = formatted_rows.get_mut(target_index).unwrap();
-    /// /* modify rows */
-    ///
-    /// });
-    /// ```
-    pub fn modify_shown_row<Fn>(&mut self, mut rows: Fn)
-    where
-        Fn: FnMut(&mut Vec<SelectableRow<Row, F>>, &HashMap<i64, usize>),
-    {
-        rows(&mut self.formatted_rows, &self.indexed_ids);
-    }
-
-    /// Sort the rows to the current sorting order and column and save them for later reuse
-    fn sort_rows(&mut self) {
-        let mut row_data: Vec<SelectableRow<Row, F>> =
-            self.rows.par_iter().map(|(_, v)| v.clone()).collect();
-
-        row_data.par_sort_by(|a, b| {
-            let ordering = self.sorted_by.order_by(&a.row_data, &b.row_data);
-            match self.sort_order {
-                SortOrder::Ascending => ordering,
-                SortOrder::Descending => ordering.reverse(),
-            }
-        });
-
-        let indexed_data = row_data
-            .par_iter()
-            .enumerate()
-            .map(|(index, row)| (row.id, index))
-            .collect();
-
-        self.indexed_ids = indexed_data;
-        self.formatted_rows = row_data;
-    }
-
     /// Change the current sort order from ascending to descending and vice versa. Will unselect
     /// all selected rows
     fn change_sort_order(&mut self) {
@@ -602,10 +499,15 @@ where
 
     /// Recreates the rows shown in the UI for the next frame load.
     ///
+    /// # Important:
+    /// - Any direct modifications made using [`modify_shown_row`](#method.modify_shown_row)
+    ///   will be **cleared** when this is called.
+    ///   To preserve changes, use [`add_modify_row`](#method.add_modify_row) to update row data instead.
+    ///
     /// # Performance:
-    /// - Should be used sparingly for large datasets as frequent calls can lead to performance issues.
-    /// - Consider calling after every X amount row updates, based on how frequently new rows are being
-    ///     added or use [`auto_scroll`](#method.auto_scroll) for automatic reload.
+    /// - Should be used sparingly for large datasets, as frequent calls can lead to performance issues.
+    /// - Consider calling after every X number of row updates, depending on update frequency,
+    ///   or use [`auto_reload`](#method.auto_reload) for automatic reload.
     ///
     /// # Example:
     /// ```rust,ignore
@@ -616,6 +518,42 @@ where
         self.active_rows.clear();
         self.active_columns.clear();
         self.sort_rows();
+    }
+
+    /// Recreates the rows shown in the UI for the next frame load.
+    ///
+    /// This function refreshes the internal row state by clearing and re-sorting the rows
+    /// similar to [`recreate_rows`](#method.recreate_rows), but it **preserves** the currently
+    /// selected rows and re-applies the active column selection to them.
+    ///
+    /// Useful when the UI needs to be refreshed without resetting user interaction state.
+    ///
+    /// # Important:
+    /// - Any direct modifications made to `formatted_rows` using [`modify_shown_row`](#method.modify_shown_row)
+    ///   will be **cleared** when this is called.
+    ///   To preserve changes, use [`add_modify_row`](#method.add_modify_row) to update row data instead.
+    ///
+    /// # Performance:
+    /// - Should be used sparingly for large datasets, as frequent calls can lead to performance issues.
+    /// - Consider calling after every X number of row updates, depending on update frequency,
+    ///   or use [`auto_reload`](#method.auto_reload) for automatic reload.
+    ///
+    /// # Example:
+    /// ```rust,ignore
+    /// table.recreate_rows_no_unselect();
+    /// ```
+    pub fn recreate_rows_no_unselect(&mut self) {
+        self.formatted_rows.clear();
+        self.sort_rows();
+
+        for row in &self.active_rows {
+            let Some(target_index) = self.indexed_ids.get(row) else {
+                continue;
+            };
+            self.formatted_rows[*target_index]
+                .selected_columns
+                .clone_from(&self.active_columns);
+        }
     }
 
     /// The first column that was passed by the user
@@ -717,7 +655,7 @@ where
     ///
     /// # Returns:
     /// - `usize`: The number of rows that are formatted and ready for display.
-    pub fn total_displayed_rows(&self) -> usize {
+    pub const fn total_displayed_rows(&self) -> usize {
         self.formatted_rows.len()
     }
 
@@ -777,6 +715,25 @@ where
     #[must_use]
     pub const fn horizontal_scroll(mut self) -> Self {
         self.horizontal_scroll = true;
+        self
+    }
+
+    /// Sets the height rows in the table.
+    ///
+    /// # Parameters:
+    /// - `height`: The desired height for each row in logical points.
+    ///
+    /// # Returns:
+    /// - `Self`: The modified table with the specified row height applied.
+    ///
+    /// # Example:
+    /// ```rust,ignore
+    /// let table = SelectableTable::new(vec![col1, col2, col3])
+    ///     .row_height(24.0);
+    /// ```
+    #[must_use]
+    pub const fn row_height(mut self, height: f32) -> Self {
+        self.row_height = height;
         self
     }
 }

@@ -180,7 +180,7 @@ where
         + ColumnOrdering<Row>,
     Conf: Default,
 {
-    pub(crate) fn update_scroll_offset(&mut self, offset: f32) {
+    pub(crate) const fn update_scroll_offset(&mut self, offset: f32) {
         self.auto_scroll.scroll_offset = offset;
     }
 
@@ -248,7 +248,7 @@ where
     /// let new_scroll_settings = AutoScroll::new(true).max_speed(60.0);
     /// table.update_auto_scroll(new_scroll_settings); // Update the auto-scroll settings during runtime
     /// ```
-    pub fn update_auto_scroll(&mut self, scroll: AutoScroll) {
+    pub const fn update_auto_scroll(&mut self, scroll: AutoScroll) {
         self.auto_scroll = scroll;
     }
 }

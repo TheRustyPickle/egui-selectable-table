@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-eframe = "0.31.0"
-egui = "0.31.0"
+eframe = "0.31.1"
+egui = "0.31.1"
 egui-selectable-table = { path = ".." }
 egui_extras = "0.31.0"
 strum = "0.27.0"

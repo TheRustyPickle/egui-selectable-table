@@ -83,6 +83,20 @@ impl App for MainWindow {
                 {
                     self.table.set_select_full_row(self.select_entire_row);
                 };
+                ui.separator();
+                if ui.button("Add unsorted row at the bottom").clicked() {
+                    let new_row = TableRow {
+                        field_1: self.row_num,
+                        field_2: self.row_num as i64 * 10,
+                        field_3: format!("I'm unsorted row with row num: {}", self.row_num),
+                        field_4: format!("field 4 with row num: {}", self.row_num),
+                        field_5: format!("field 5 with row num: {}", self.row_num),
+                        field_6: format!("field 6 with row num: {}", self.row_num),
+                        create_count: 0,
+                    };
+                    self.row_num += 1;
+                    self.table.add_unsorted_row(new_row);
+                }
             });
             ui.separator();
             ui.horizontal(|ui| {
@@ -257,7 +271,7 @@ impl ColumnOperations<TableRow, TableColumns, Config> for TableColumns {
         // reloaded. After there is no more row creation, auto reload is turned off and won't
         // reload until next manual intervention. While no more rows are being created, we are
         // modifying the rows directly that are being shown in the UI which is much less
-        // expensive and gets shown to the UI immediately
+        // expensive and gets shown to the UI immediately.
         // Continue to update the persistent row data to ensure once reload happens, the
         // previous count data is not lost
         table.add_modify_row(|table| {
@@ -292,6 +306,10 @@ impl ColumnOperations<TableRow, TableColumns, Config> for TableColumns {
             if ui.button("Copy Selected Cells").clicked() {
                 table.copy_selected_cells(ui);
                 ui.close_menu();
+            }
+            if table.get_total_selected_rows() <= 1 && ui.button("Mark row as selected").clicked() {
+                ui.close_menu();
+                table.mark_row_as_selected(row_id, None);
             }
         });
         resp
