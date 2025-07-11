@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-eframe = "0.31.1"
-egui = "0.31.1"
+eframe = "0.32.0"
+egui = "0.32.0"
 egui-selectable-table = { path = ".." }
-egui_extras = "0.31.0"
-strum = "0.27.0"
-strum_macros = "0.27.0"
+egui_extras = "0.32.0"
+strum = "0.27.1"
+strum_macros = "0.27.1"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4"
