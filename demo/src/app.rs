@@ -1,7 +1,7 @@
 use eframe::{App, CreationContext, Frame};
 use egui::{
-    global_theme_preference_switch, Align, Button, CentralPanel, Context, Layout, SelectableLabel,
-    Slider, ThemePreference, Ui,
+    global_theme_preference_switch, Align, Button, CentralPanel, Context, Layout, Slider,
+    ThemePreference, Ui,
 };
 use egui_extras::Column;
 use egui_selectable_table::{
@@ -243,7 +243,7 @@ impl ColumnOperations<TableRow, TableColumns, Config> for TableColumns {
             }
         }
         let selected = sort_order.is_some();
-        let resp = ui.add_sized(ui.available_size(), SelectableLabel::new(selected, text));
+        let resp = ui.add_sized(ui.available_size(), Button::selectable(selected, text));
         Some(resp)
     }
     fn create_table_row(
@@ -289,26 +289,23 @@ impl ColumnOperations<TableRow, TableColumns, Config> for TableColumns {
 
         // The same approach works for both cell based selection and for entire row selection on
         // drag.
-        let resp = ui.add_sized(
-            ui.available_size(),
-            SelectableLabel::new(cell_selected, text),
-        );
+        let resp = ui.add_sized(ui.available_size(), Button::selectable(cell_selected, text));
 
         resp.context_menu(|ui| {
             if ui.button("Select All Rows").clicked() {
                 table.select_all();
-                ui.close_menu();
+                ui.close();
             }
             if ui.button("Unselect All Rows").clicked() {
                 table.unselect_all();
-                ui.close_menu();
+                ui.close();
             }
             if ui.button("Copy Selected Cells").clicked() {
                 table.copy_selected_cells(ui);
-                ui.close_menu();
+                ui.close();
             }
-            if table.get_total_selected_rows() <= 1 && ui.button("Mark row as selected").clicked() {
-                ui.close_menu();
+            if ui.button("Mark row as selected").clicked() {
+                ui.close();
                 table.mark_row_as_selected(row_id, None);
             }
         });
