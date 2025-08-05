@@ -1,6 +1,6 @@
 [package]
 name = "egui-selectable-table"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2024"
 authors = ["TheRustyPickle <rusty.pickle94@gmail.com>"]
 readme = "README.md"
