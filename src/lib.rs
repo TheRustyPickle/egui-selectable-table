@@ -1,9 +1,12 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 mod auto_reload;
 mod auto_scroll;
 mod row_modification;
 mod row_selection;
 
 #[cfg(feature = "fuzzy-matching")]
+#[cfg_attr(docsrs, doc(cfg(feature = "fuzzy-matching")))]
 mod fuzzy_matcher;
 
 use auto_reload::AutoReload;

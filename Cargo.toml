@@ -37,4 +37,10 @@ missing_panics_doc = { level = "allow", priority = 7 }
 struct_excessive_bools = { level = "allow", priority = 8 }
 
 [features]
+default = []
 fuzzy-matching = ["dep:nucleo-matcher"]
+
+[package.metadata.docs.rs]
+all-features = true
+features = ["fuzzy-matching"]
+rustdoc-args = ["--cfg", "docsrs"]
