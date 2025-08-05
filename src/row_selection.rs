@@ -1,5 +1,5 @@
-use egui::ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use egui::Ui;
+use egui::ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use std::fmt::Write as _;
 use std::hash::Hash;
 

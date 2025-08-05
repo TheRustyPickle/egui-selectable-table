@@ -3,6 +3,9 @@ mod auto_scroll;
 mod row_modification;
 mod row_selection;
 
+#[cfg(feature = "fuzzy-matching")]
+mod fuzzy_matcher;
+
 use auto_reload::AutoReload;
 pub use auto_scroll::AutoScroll;
 use egui::ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
@@ -10,6 +13,9 @@ use egui::{Event, Key, Label, Response, ScrollArea, Sense, Ui};
 use egui_extras::{Column, TableBuilder, TableRow};
 use std::cmp::Ordering;
 use std::hash::Hash;
+
+#[cfg(feature = "fuzzy-matching")]
+use nucleo_matcher::Matcher;
 
 /// Enum representing the possible sort orders for table columns.
 #[derive(Default, Clone, Copy)]
@@ -237,6 +243,11 @@ where
     add_serial_column: bool,
     /// The row height for the table, defaults to 25.0
     row_height: f32,
+    /// The matcher used for fuzzy searching
+    #[cfg(feature = "fuzzy-matching")]
+    matcher: Matcher,
+    /// Whether to capture Ctrl+A for selecting all rows
+    no_ctrl_a_capture: bool,
 }
 
 impl<Row, F, Conf> SelectableTable<Row, F, Conf>
@@ -295,6 +306,9 @@ where
             config: Conf::default(),
             add_serial_column: false,
             row_height: 25.0,
+            #[cfg(feature = "fuzzy-matching")]
+            matcher: Matcher::default(),
+            no_ctrl_a_capture: false,
         }
     }
 
@@ -366,7 +380,7 @@ where
         if copy_initiated {
             self.copy_selected_cells(ui);
         }
-        if is_ctrl_pressed && key_a_pressed {
+        if is_ctrl_pressed && key_a_pressed && !self.no_ctrl_a_capture {
             self.select_all();
         }
 
@@ -735,5 +749,34 @@ where
     pub const fn row_height(mut self, height: f32) -> Self {
         self.row_height = height;
         self
+    }
+
+    /// Disables Ctrl+A keyboard shortcut capturing for selecting all rows
+    ///
+    /// # Returns:
+    /// - `Self`: The modified table with Ctrl+A capturing disabled.
+    ///
+    /// # Example:
+    /// ```rust,ignore
+    /// let table = SelectableTable::new(columns)
+    ///     .no_ctrl_a_capture();
+    /// ```
+    #[must_use]
+    pub const fn no_ctrl_a_capture(mut self) -> Self {
+        self.no_ctrl_a_capture = true;
+        self
+    }
+
+    /// Enables or disables Ctrl+A keyboard shortcut capturing dynamically for selecting all rows.
+    ///
+    /// # Parameters:
+    /// - `status`: `true` to disable Ctrl+A capture, `false` to enable it.
+    ///
+    /// # Example:
+    /// ```rust,ignore
+    /// table.set_no_ctrl_a_capture(true); // Disable Ctrl+A capture
+    /// ```
+    pub const fn set_no_ctrl_a_capture(&mut self, status: bool) {
+        self.no_ctrl_a_capture = status;
     }
 }

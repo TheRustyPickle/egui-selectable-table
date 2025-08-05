@@ -16,6 +16,18 @@ A library for [egui](https://github.com/emilk/egui) to create tables with dragga
 - Customizable rows and header UI
 - Built-in select all (Ctrl+A) and copy (Ctrl+C) functionality
 - Capable of handling a substantial amount of rows (1M+) with proper settings
+- Optional fuzzy matching for searching rows (see below)
+
+## Optional Features
+
+This crate includes an optional `fuzzy-matching` feature that enables fuzzy row search using the [nucleo-matcher](https://crates.io/crates/nucleo-matcher) crate.
+
+To enable fuzzy matching:
+
+```toml
+[dependencies]
+egui-selectable-table = { version = "0.4.0", features = ["fuzzy-matching"] }
+```
 
 ## Usage
 
@@ -43,12 +55,13 @@ enum Column {
 // Implement both traits for row and column
 impl ColumnOperations<MyRow, ColumnName, Config> for Column {
     // The text of a row based on the column
-    fn column_text(&self, row: &WhiteListRowData) -> String {}
+    fn column_text(&self, row: &MyRow) -> String {}
     // Create your own header or no header
     fn create_header(&self, ui: &mut Ui, sort_order: Option<SortOrder>, table: &mut SelectableTable<MyRow, Column, Config>) -> Option<Response> {}
     //Create your own table row UI
     fn create_table_row(&self, ui: &mut Ui, row: &SelectableRow<MyRow, Column>, selected: bool, table: &mut SelectableTable<MyRow, Column, Config>,) -> Response {}
 }
+
 impl ColumnOrdering<MyRow> for Column {
     fn order_by(&self, row_1: &MyRow, row_2: &MyRow) -> std::cmp::Ordering {
         match self {
