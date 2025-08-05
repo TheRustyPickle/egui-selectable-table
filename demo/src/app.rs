@@ -1,14 +1,15 @@
 use eframe::{App, CreationContext, Frame};
+use egui::ahash::{HashSet, HashSetExt};
 use egui::{
-    global_theme_preference_switch, Align, Button, CentralPanel, Context, Layout, Slider,
-    ThemePreference, Ui,
+    Align, Button, CentralPanel, Context, Layout, Slider, TextEdit, ThemePreference, Ui, Visuals,
 };
 use egui_extras::Column;
 use egui_selectable_table::{
     AutoScroll, ColumnOperations, ColumnOrdering, SelectableRow, SelectableTable, SortOrder,
 };
+use egui_theme_lerp::ThemeAnimator;
 use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
+use strum_macros::{Display, EnumIter};
 
 #[derive(Default, Clone, Copy)]
 pub struct Config {
@@ -16,6 +17,7 @@ pub struct Config {
 }
 
 pub struct MainWindow {
+    search_text: String,
     select_entire_row: bool,
     add_rows: bool,
     auto_scrolling: bool,
@@ -26,6 +28,8 @@ pub struct MainWindow {
     reload_counter: u32,
     table: SelectableTable<TableRow, TableColumns, Config>,
     conf: Config,
+    theme_animator: ThemeAnimator,
+    search_column_list: HashSet<TableColumns>,
 }
 
 impl MainWindow {
@@ -39,9 +43,11 @@ impl MainWindow {
         let table = SelectableTable::new(all_columns)
             .auto_reload(10_000)
             .auto_scroll()
-            .horizontal_scroll();
+            .horizontal_scroll()
+            .no_ctrl_a_capture();
 
         MainWindow {
+            search_text: String::new(),
             select_entire_row: false,
             add_rows: false,
             auto_scrolling: true,
@@ -52,15 +58,38 @@ impl MainWindow {
             reload_counter: 0,
             table,
             conf: Config::default(),
+            theme_animator: ThemeAnimator::new(Visuals::light(), Visuals::dark()),
+            search_column_list: HashSet::new(),
         }
     }
 }
 
 impl App for MainWindow {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
+        let theme_emoji = if !self.theme_animator.animation_done {
+            if self.theme_animator.theme_1_to_2 {
+                "☀"
+            } else {
+                "🌙"
+            }
+        } else if self.theme_animator.theme_1_to_2 {
+            "🌙"
+        } else {
+            "☀"
+        };
+
         CentralPanel::default().show(ctx, |ui| {
+            if self.theme_animator.anim_id.is_none() {
+                self.theme_animator.create_id(ui);
+            } else {
+                self.theme_animator.animate(ctx);
+            }
+
             ui.horizontal(|ui| {
-                global_theme_preference_switch(ui);
+                if ui.button(theme_emoji).clicked() {
+                    self.theme_animator.start();
+                }
+
                 ui.separator();
                 ui.label("Total Rows to add:");
                 ui.add(Slider::new(&mut self.row_count, 10000..=1_000_000));
@@ -87,11 +116,11 @@ impl App for MainWindow {
                 if ui.button("Add unsorted row at the bottom").clicked() {
                     let new_row = TableRow {
                         field_1: self.row_num,
-                        field_2: self.row_num as i64 * 10,
-                        field_3: format!("I'm unsorted row with row num: {}", self.row_num),
-                        field_4: format!("field 4 with row num: {}", self.row_num),
-                        field_5: format!("field 5 with row num: {}", self.row_num),
-                        field_6: format!("field 6 with row num: {}", self.row_num),
+                        field_2: self.row_num * 3,
+                        field_3: self.row_num * 8,
+                        field_4: self.row_num * 11,
+                        field_5: self.row_num * 17,
+                        field_6: self.row_num * 21,
                         create_count: 0,
                     };
                     self.row_num += 1;
@@ -134,6 +163,44 @@ impl App for MainWindow {
                 ui.separator();
             }
 
+            ui.horizontal(|ui| {
+                let text_edit =
+                    TextEdit::singleline(&mut self.search_text).hint_text("Search for rows");
+
+                ui.add(text_edit);
+
+                if ui.button("Search").clicked() {
+                    let column_list: Vec<TableColumns> =
+                        self.search_column_list.clone().into_iter().collect();
+
+                    self.table
+                        .search_and_show(&column_list, &self.search_text, None, None);
+                };
+
+                if ui.button("Clear").clicked() {
+                    self.search_text.clear();
+                    self.table.recreate_rows();
+                };
+
+                ui.separator();
+
+                let all_columns: Vec<TableColumns> = TableColumns::iter().collect();
+                for col in all_columns.into_iter() {
+                    if ui
+                        .selectable_label(self.search_column_list.contains(&col), col.to_string())
+                        .clicked()
+                    {
+                        if self.search_column_list.contains(&col) {
+                            self.search_column_list.remove(&col);
+                        } else {
+                            self.search_column_list.insert(col);
+                        }
+                    };
+                }
+            });
+
+            ui.separator();
+
             self.table.show_ui(ui, |table| {
                 let mut table = table
                     .drag_to_scroll(false)
@@ -156,11 +223,11 @@ impl App for MainWindow {
                     self.table.add_modify_row(|_| {
                         let new_row = TableRow {
                             field_1: self.row_num,
-                            field_2: self.row_num as i64 * 10,
-                            field_3: format!("field 3 with row num: {}", self.row_num),
-                            field_4: format!("field 4 with row num: {}", self.row_num),
-                            field_5: format!("field 5 with row num: {}", self.row_num),
-                            field_6: format!("field 6 with row num: {}", self.row_num),
+                            field_2: self.row_num * 3,
+                            field_3: self.row_num * 8,
+                            field_4: self.row_num * 11,
+                            field_5: self.row_num * 17,
+                            field_6: self.row_num * 21,
                             create_count: 0,
                         };
                         Some(new_row)
@@ -188,23 +255,30 @@ impl App for MainWindow {
 #[derive(Clone, Default)]
 struct TableRow {
     field_1: u64,
-    field_2: i64,
-    field_3: String,
-    field_4: String,
-    field_5: String,
-    field_6: String,
+    field_2: u64,
+    field_3: u64,
+    field_4: u64,
+    field_5: u64,
+    field_6: u64,
     create_count: u64,
 }
 
-#[derive(Eq, PartialEq, Debug, Ord, PartialOrd, Clone, Copy, Hash, Default, EnumIter)]
+#[derive(Eq, PartialEq, Debug, Ord, PartialOrd, Clone, Copy, Hash, Default, EnumIter, Display)]
 enum TableColumns {
     #[default]
+    #[strum(to_string = "Column 1")]
     Field1,
+    #[strum(to_string = "Column 2")]
     Field2,
+    #[strum(to_string = "Column 3")]
     Field3,
+    #[strum(to_string = "Column 4")]
     Field4,
+    #[strum(to_string = "Column 5")]
     Field5,
+    #[strum(to_string = "Column 6")]
     Field6,
+    #[strum(to_string = "Render Counter")]
     Field7,
 }
 
@@ -226,16 +300,8 @@ impl ColumnOperations<TableRow, TableColumns, Config> for TableColumns {
         sort_order: Option<SortOrder>,
         _table: &mut SelectableTable<TableRow, TableColumns, Config>,
     ) -> Option<egui::Response> {
-        let mut text = match self {
-            TableColumns::Field1 => "Field 1",
-            TableColumns::Field2 => "Field 2",
-            TableColumns::Field3 => "Field 3",
-            TableColumns::Field4 => "Field 4",
-            TableColumns::Field5 => "Field 5",
-            TableColumns::Field6 => "Field 6",
-            TableColumns::Field7 => "Row Creation Count",
-        }
-        .to_string();
+        let mut text = self.to_string();
+
         if let Some(sort) = sort_order {
             match sort {
                 SortOrder::Ascending => text += "🔽",
