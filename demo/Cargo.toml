@@ -1,15 +1,16 @@
 [package]
 name = "demo"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 eframe = "0.32.0"
 egui = "0.32.0"
-egui-selectable-table = { path = ".." }
+egui-selectable-table = { path = "..", features = ["fuzzy-matching"] }
 egui_extras = "0.32.0"
-strum = "0.27.1"
-strum_macros = "0.27.1"
+strum = "0.27.2"
+strum_macros = "0.27.2"
+egui-theme-lerp = "0.3.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4"
