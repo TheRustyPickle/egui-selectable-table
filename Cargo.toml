@@ -1,6 +1,6 @@
 [package]
 name = "egui-selectable-table"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2024"
 authors = ["TheRustyPickle <rusty.pickle94@gmail.com>"]
 readme = "README.md"
@@ -37,4 +37,10 @@ missing_panics_doc = { level = "allow", priority = 7 }
 struct_excessive_bools = { level = "allow", priority = 8 }
 
 [features]
+default = []
 fuzzy-matching = ["dep:nucleo-matcher"]
+
+[package.metadata.docs.rs]
+all-features = true
+features = ["fuzzy-matching"]
+rustdoc-args = ["--cfg", "docsrs"]
