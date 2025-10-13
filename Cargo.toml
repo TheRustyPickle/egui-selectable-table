@@ -1,6 +1,6 @@
 [package]
 name = "egui-selectable-table"
-version = "0.4.1"
+version = "0.5.0"
 edition = "2024"
 authors = ["TheRustyPickle <rusty.pickle94@gmail.com>"]
 readme = "README.md"
@@ -15,10 +15,10 @@ license = "MIT"
 exclude = ["/demo", "/.github"]
 
 [dependencies]
-egui = { version = "0.32.0", default-features = false, features = ["rayon"] }
-egui_extras = { version = "0.32.0", default-features = false }
+egui = { version = "0.33", default-features = false, features = ["rayon"] }
+egui_extras = { version = "0.33", default-features = false }
 nucleo-matcher = { version = "0.3.1", optional = true }
-rayon = "1.10.0"
+rayon = "1.11.0"
 
 [lints.rust]
 unsafe_code = "forbid"
