@@ -134,9 +134,9 @@ where
     ///
     /// # Important:
     /// - This method does not contribute toward [`auto_reload`](#method.auto_reload) count.
-    /// - Later calls to [`recreate_rows`](#method.recreate_rows) or 
+    /// - Later calls to [`recreate_rows`](#method.recreate_rows) or
     ///   [`recreate_rows_no_unselect`](#method.recreate_rows_no_unselect) will sort the row again.
-    /// 
+    ///
     /// # Parameters:
     /// - `row`: The data to insert into the table.
     ///
