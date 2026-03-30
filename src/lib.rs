@@ -246,6 +246,9 @@ where
     add_serial_column: bool,
     /// The row height for the table, defaults to 25.0
     row_height: f32,
+    /// The header height for the table, defaults to 20.0
+    header_height: f32,
+
     /// The matcher used for fuzzy searching
     #[cfg(feature = "fuzzy-matching")]
     matcher: Matcher,
@@ -309,6 +312,7 @@ where
             config: Conf::default(),
             add_serial_column: false,
             row_height: 25.0,
+            header_height: 20.0,
             #[cfg(feature = "fuzzy-matching")]
             matcher: Matcher::default(),
             no_ctrl_a_capture: false,
@@ -347,7 +351,8 @@ where
         self
     }
 
-    /// Clears all rows from the table, including the displayed ones
+    /// Clears all rows from the table, including the displayed ones. No need for any additional
+    /// call to update the UI.
     ///
     /// # Example:
     /// ```rust,ignore
@@ -365,7 +370,8 @@ where
     ///
     /// # Parameters:
     /// - `ui`: The UI context where the table will be rendered.
-    /// - `table_builder`: A closure that receives and modifies the `TableBuilder`.
+    /// - A closure that provides and allows modification of `TableBuilder`. Build your own table
+    ///   and return it.
     ///
     /// # Example:
     /// ```rust,ignore
@@ -408,7 +414,7 @@ where
                 }
 
                 let output = table
-                    .header(20.0, |header| {
+                    .header(self.header_height, |header| {
                         self.build_head(header);
                     })
                     .body(|body| {
@@ -437,7 +443,7 @@ where
             }
 
             let output = table
-                .header(20.0, |header| {
+                .header(self.header_height, |header| {
                     self.build_head(header);
                 })
                 .body(|body| {
@@ -701,9 +707,9 @@ where
         &self.rows
     }
 
-    /// Adds a serial column to the table.
+    /// Adds a serial column UI to the table.
     ///
-    /// The serial column is automatically generated and displayed at the very left of the table.
+    /// The serial column UI is automatically generated and displayed at the very left of the table.
     /// It shows the row number (starting from 1) for each row.
     ///
     /// # Returns:
@@ -752,6 +758,25 @@ where
     #[must_use]
     pub const fn row_height(mut self, height: f32) -> Self {
         self.row_height = height;
+        self
+    }
+
+    /// Sets the height of the header in the table. Defaults to 20.0.
+    ///
+    /// # Parameters:
+    /// - `height`: The desired height for the header
+    ///
+    /// # Returns:
+    /// - `Self`: The modified table with the specified header height applied.
+    ///
+    /// # Example:
+    /// ```rust,ignore
+    /// let table = SelectableTable::new(vec![col1, col2, col3])
+    ///     .header_height(24.0);
+    /// ```
+    #[must_use]
+    pub const fn header_height(mut self, height: f32) -> Self {
+        self.header_height = height;
         self
     }
 

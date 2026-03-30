@@ -1,5 +1,6 @@
 use egui::Ui;
 use egui::ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use std::fmt::Write as _;
 use std::hash::Hash;
 
@@ -100,7 +101,7 @@ where
 
         let drag_start = self.drag_started_on.clone().expect("Drag start not found");
 
-        // number of the column of drag starting point and the current cell that we are trying to select
+        // Number of the column of drag starting point and the current cell that we are trying to select
         let drag_start_num = self.column_to_num(&drag_start.1);
         let ongoing_column_num = self.column_to_num(column_name);
 
@@ -363,7 +364,7 @@ where
 
     /// Selects all rows and columns in the table.
     ///
-    /// After calling this method, all rows will have all columns selected.
+    /// After calling this method, all rows will have all columns selected and visible immediately.
     ///
     /// # Example:
     /// ```rust,ignore
@@ -418,6 +419,44 @@ where
         selected_rows
     }
 
+    /// Retrieves the currently selected rows but in no particular order. Can be faster than
+    /// [`get_selected_rows`](#method.get_selected_rows) as it uses rayon for parallel processing
+    /// and only checks the active rows instead of every single row.
+    ///
+    /// This method returns a vector of the rows that have one or more columns selected.
+    ///
+    /// If the `select_full_row` flag is enabled, it will ensure that all columns are selected for
+    /// each active row.
+    ///
+    /// # Returns:
+    /// A `Vec` of `SelectableRow` instances that are currently selected.
+    ///
+    /// # Example:
+    /// ```rust,ignore
+    /// let selected_rows = table.get_selected_rows();
+    /// ```
+    pub fn get_selected_rows_unsorted(&mut self) -> Vec<SelectableRow<Row, F>> {
+        if self.select_full_row {
+            self.active_columns.extend(self.all_columns.clone());
+        }
+
+        self.active_rows
+            .par_iter()
+            .map(|row_id| {
+                let row_index = self
+                    .indexed_ids
+                    .get(row_id)
+                    .expect("Could not get id index");
+                let target_row = self
+                    .formatted_rows
+                    .get(*row_index)
+                    .expect("Could not get row");
+
+                target_row.clone()
+            })
+            .collect()
+    }
+
     /// Copies selected cells to the system clipboard in a tabular format.
     ///
     /// This method copies only the selected cells from each row to the clipboard, and ensures
@@ -441,7 +480,7 @@ where
         // Iter through all the rows and find the rows that have at least one column as selected.
         // Keep track of the biggest length of a value of a column
         // active rows cannot be used here because hashset does not maintain an order.
-        // So itering will give the rows in a different order than what is shown in the ui
+        // So iterating will give the rows in a different order than what is shown in the ui
         for row in &self.formatted_rows {
             if row.selected_columns.is_empty() {
                 continue;
