@@ -21,8 +21,15 @@ where
     /// Modify or add rows to the table. Changes are not immediately reflected in the UI.
     /// You must call [`recreate_rows`](#method.recreate_rows) or [`recreate_rows_no_unselect`](#method.recreate_rows_no_unselect) to apply these changes visually.
     ///
+    /// If modifying existing and visible row, consider using [`modify_shown_row`](#method.modify_shown_row)
+    /// alongside modifying through this function which will effectively mirror [`recreate_rows`](#method.recreate_rows)
+    /// without doing an expensive call.
+    ///
+    /// Bulk additions of rows is possible through this function with a single call to
+    /// [`add_modify_row`](#method.add_modify_row) at the end.
+    ///
     /// # Parameters:
-    /// - `table`: A closure that takes a mutable reference to the rows and optionally returns a new row.
+    /// - A closure that provides a mutable reference to the rows and optionally returns a new row.
     ///   If a row is returned, it will be added to the table.
     ///
     /// # Auto Reload:
@@ -77,15 +84,31 @@ where
     /// This provides direct access to the currently formatted rows for lightweight updates.
     ///
     /// # Important:
-    /// - This does **not** require calling `recreate_rows` to reflect changes in the UI.
+    /// - This does **not** require calling [`recreate_rows`](#method.recreate_rows) to reflect changes in the UI.
     /// - **Do not delete rows** from inside this closure — doing so will **cause a panic** and break internal assumptions.
     ///   To safely delete a row, use [`add_modify_row`](#method.add_modify_row) and then call [`recreate_rows`](#method.recreate_rows) or [`recreate_rows_no_unselect`](#method.recreate_rows_no_unselect).
-    /// - Can be used alongside [`add_modify_row`](#method.add_modify_row) to show updated data immediately.
-    ///   When row recreation happens, the modified data will be preserved as long as it's updated via [`add_modify_row`](#method.add_modify_row).
+    /// - Can be used to update a row and show it immediately without having to do an expensive [`recreate_rows`](#method.recreate_rows).
+    ///   You can then immediately call [`add_modify_row`](#method.add_modify_row) to do the same
+    ///   update so later calls to [`recreate_rows`](#method.recreate_rows) or
+    ///   [`recreate_rows_no_unselect`](#method.recreate_rows_no_unselect) does not revert the changes.
     /// - Does not contribute toward [`auto_reload`](#method.auto_reload) count.
     ///
     /// # Parameters:
-    /// - `table`: A closure that takes a mutable reference to the currently formatted rows and an index map.
+    /// - A closure that provides a mutable reference to the currently formatted rows and an index map.
+    ///
+    /// # When to use:
+    /// - Use when you need to modify a data that is currently displayed without having to call
+    ///   [`recreate_rows`](#method.recreate_rows).
+    /// - When you need to make a temporary change to the data displayed in the UI. To persist any
+    ///   changes, use [`add_modify_row`](#method.add_modify_row).
+    ///
+    /// # How to use:
+    /// 1. Get the row ID you want to modify.
+    /// 2. Use the index map to get the index of the row in the formatted rows.
+    /// 3. Use the index to get a mutable reference to the row.
+    /// 4. Safely modify the row contents.
+    /// 5. In the next frame load, the modified data is visible immediately without any additional
+    ///    calls.
     ///
     /// # Example:
     /// ```rust,ignore
@@ -108,6 +131,11 @@ where
     /// This method inserts the row as-is at the end of the table, assigns it a unique ID, and
     /// returns it as a `SelectableRow`. This does **not**
     /// require calling [`recreate_rows`](#method.recreate_rows) for the row to appear in the UI.
+    ///
+    /// # Important:
+    /// - This method does not contribute toward [`auto_reload`](#method.auto_reload) count.
+    /// - Later calls to [`recreate_rows`](#method.recreate_rows) or
+    ///   [`recreate_rows_no_unselect`](#method.recreate_rows_no_unselect) will sort the row again.
     ///
     /// # Parameters:
     /// - `row`: The data to insert into the table.

@@ -7,6 +7,7 @@ pub struct AutoReload {
     pub reload_after: Option<u32>,
     pub reload_count: u32,
 }
+
 impl AutoReload {
     /// Increase the current reload count and return bool based on if it is equal or above the count it is
     /// supposed to reload at
@@ -54,6 +55,13 @@ where
     /// - Tune the `count` value based on the expected rate of updates. For instance, if new rows or modifications
     ///   occur at a rate of 1000 rows per second, a `count` between 500 and 1000 may offer the best balance between
     ///   performance and up-to-date display.
+    ///
+    /// # When to use:
+    /// This can be useful when streaming table data from a source and it gets updated
+    /// frequently. If for example 1k rows are added/modified per second, it might be a good idea
+    /// to set the count at 5k so it auto reloads the table every 5 seconds. This
+    /// allows not having to keep track of when to reload the table and reloading once at the end
+    /// of stream can result in the table showing the latest data.
     ///
     /// # Example:
     /// ```rust,ignore

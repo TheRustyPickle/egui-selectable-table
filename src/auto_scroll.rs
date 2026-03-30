@@ -117,7 +117,6 @@ impl AutoScroll {
         if let Some(loc) = pointer {
             let pointer_y = loc.y;
 
-            // Min gets a bit more space as the header is along the way
             let min_y = max_rect.min.y + self.distance_from_min;
             let max_y = max_rect.max.y - self.distance_from_max;
 
