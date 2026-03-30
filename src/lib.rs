@@ -400,11 +400,11 @@ where
 
                 table = table_builder(table);
 
-                if self.drag_started_on.is_some() {
-                    if let Some(offset) = self.auto_scroll.start_scroll(max_rect, pointer) {
-                        table = table.vertical_scroll_offset(offset);
-                        ctx.request_repaint();
-                    }
+                if self.drag_started_on.is_some()
+                    && let Some(offset) = self.auto_scroll.start_scroll(max_rect, pointer)
+                {
+                    table = table.vertical_scroll_offset(offset);
+                    ctx.request_repaint();
                 }
 
                 let output = table
@@ -429,11 +429,11 @@ where
 
             table = table_builder(table);
 
-            if self.drag_started_on.is_some() {
-                if let Some(offset) = self.auto_scroll.start_scroll(max_rect, pointer) {
-                    table = table.vertical_scroll_offset(offset);
-                    ctx.request_repaint();
-                }
+            if self.drag_started_on.is_some()
+                && let Some(offset) = self.auto_scroll.start_scroll(max_rect, pointer)
+            {
+                table = table.vertical_scroll_offset(offset);
+                ctx.request_repaint();
             }
 
             let output = table
@@ -651,17 +651,18 @@ where
                     self.select_single_row_cell(row_data.id, column_name);
                 }
 
-                if ui.ui_contains_pointer() && self.drag_started_on.is_some() {
-                    if let Some(drag_start) = self.drag_started_on.as_ref() {
-                        // Only call drag either when not on the starting drag row/column or went beyond the
-                        // drag point at least once. Otherwise normal click would be considered as drag
-                        if drag_start.0 != row_data.id
-                            || &drag_start.1 != column_name
-                            || self.beyond_drag_point
-                        {
-                            let is_ctrl_pressed = ui.ctx().input(|i| i.modifiers.ctrl);
-                            self.select_dragged_row_cell(row_data.id, column_name, is_ctrl_pressed);
-                        }
+                if ui.ui_contains_pointer()
+                    && self.drag_started_on.is_some()
+                    && let Some(drag_start) = self.drag_started_on.as_ref()
+                {
+                    // Only call drag either when not on the starting drag row/column or went beyond the
+                    // drag point at least once. Otherwise normal click would be considered as drag
+                    if drag_start.0 != row_data.id
+                        || &drag_start.1 != column_name
+                        || self.beyond_drag_point
+                    {
+                        let is_ctrl_pressed = ui.ctx().input(|i| i.modifiers.ctrl);
+                        self.select_dragged_row_cell(row_data.id, column_name, is_ctrl_pressed);
                     }
                 }
             });
@@ -722,7 +723,7 @@ where
     /// Add a horizontal scrollbar to the table
     ///
     /// # Returns:
-    /// - `Self`: The modified table with the serial column enabled.
+    /// - `Self`: The modified table with the horizontal scrollbar enabled.
     ///
     /// # Example:
     /// ```rust,ignore
@@ -735,7 +736,7 @@ where
         self
     }
 
-    /// Sets the height rows in the table.
+    /// Sets the height of the rows in the table. Defaults to 25.0.
     ///
     /// # Parameters:
     /// - `height`: The desired height for each row in logical points.

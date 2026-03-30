@@ -7,7 +7,7 @@ use eframe::{WebOptions, WebRunner};
 
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
-    use egui::{ViewportBuilder, vec2};
+    use eframe::egui::{ViewportBuilder, vec2};
 
     let options = eframe::NativeOptions {
         centered: true,

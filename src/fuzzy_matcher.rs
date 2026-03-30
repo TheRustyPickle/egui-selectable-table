@@ -67,10 +67,8 @@ where
             return;
         }
 
-        let pattern = pattern.map_or_else(
-            || Pattern::parse(query, CaseMatching::Ignore, Normalization::Smart),
-            |pattern| pattern,
-        );
+        let pattern = pattern
+            .unwrap_or_else(|| Pattern::parse(query, CaseMatching::Ignore, Normalization::Smart));
 
         let mut buf = Vec::new();
         let mut row_data: Vec<SelectableRow<Row, F>> = Vec::new();
@@ -90,10 +88,10 @@ where
             {
                 row_data.push(val.clone());
 
-                if let Some(max) = limit {
-                    if row_data.len() >= max {
-                        break;
-                    }
+                if let Some(max) = limit
+                    && row_data.len() >= max
+                {
+                    break;
                 }
             }
         }
