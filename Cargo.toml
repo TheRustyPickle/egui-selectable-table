@@ -1,32 +1,37 @@
 [package]
 name = "egui-selectable-table"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2024"
-authors = ["TheRustyPickle <rusty.pickle94@gmail.com>"]
-readme = "README.md"
 description = """
 A library for egui to create tables with draggable cell and row selection.
 """
-keywords = ["egui", "table", "selectable-table", "drag", "row"]
-categories = ["gui"]
+readme = "README.md"
 homepage = "https://github.com/TheRustyPickle/egui-selectable-table"
 repository = "https://github.com/TheRustyPickle/egui-selectable-table"
 license = "MIT"
-exclude = ["/demo", "/.github"]
+keywords = ["drag", "egui", "row", "selectable-table", "table"]
+categories = ["gui"]
+exclude = ["/.github", "/demo"]
+
+[package.metadata.docs.rs]
+all-features = true
+features = ["fuzzy-matching"]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-egui = { version = "0.33", default-features = false, features = ["rayon"] }
-egui_extras = { version = "0.33", default-features = false }
+egui = { version = "0.34", default-features = false, features = ["rayon"] }
+egui_extras = { version = "0.34", default-features = false }
 nucleo-matcher = { version = "0.3.1", optional = true }
 rayon = "1.11.0"
 
-[lints.rust]
-unsafe_code = "forbid"
+[features]
+default = []
+fuzzy-matching = ["dep:nucleo-matcher"]
 
 [lints.clippy]
+enum_glob_use = { level = "deny", priority = 2 }
 nursery = { level = "deny", priority = 0 }
 pedantic = { level = "deny", priority = 1 }
-enum_glob_use = { level = "deny", priority = 2 }
 perf = { level = "deny", priority = 3 }
 style = { level = "deny", priority = 4 }
 unwrap_used = { level = "deny", priority = 5 }
@@ -36,11 +41,5 @@ expect_used = { level = "allow", priority = 6 }
 missing_panics_doc = { level = "allow", priority = 7 }
 struct_excessive_bools = { level = "allow", priority = 8 }
 
-[features]
-default = []
-fuzzy-matching = ["dep:nucleo-matcher"]
-
-[package.metadata.docs.rs]
-all-features = true
-features = ["fuzzy-matching"]
-rustdoc-args = ["--cfg", "docsrs"]
+[lints.rust]
+unsafe_code = "forbid"

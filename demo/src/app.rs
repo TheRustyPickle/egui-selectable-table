@@ -1,8 +1,6 @@
-use eframe::{App, CreationContext, Frame};
+use eframe::{App, CreationContext, Frame, egui};
 use egui::ahash::{HashSet, HashSetExt};
-use egui::{
-    Align, Button, CentralPanel, Context, Layout, Slider, TextEdit, ThemePreference, Ui, Visuals,
-};
+use egui::{Align, Button, CentralPanel, Layout, Slider, TextEdit, ThemePreference, Ui, Visuals};
 use egui_extras::Column;
 use egui_selectable_table::{
     AutoScroll, ColumnOperations, ColumnOrdering, SelectableRow, SelectableTable, SortOrder,
@@ -65,7 +63,7 @@ impl MainWindow {
 }
 
 impl App for MainWindow {
-    fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
+    fn ui(&mut self, ui: &mut Ui, _frame: &mut Frame) {
         let theme_emoji = if !self.theme_animator.animation_done {
             if self.theme_animator.theme_1_to_2 {
                 "☀"
@@ -78,11 +76,11 @@ impl App for MainWindow {
             "☀"
         };
 
-        CentralPanel::default().show(ctx, |ui| {
+        CentralPanel::default().show_inside(ui, |ui| {
             if self.theme_animator.anim_id.is_none() {
                 self.theme_animator.create_id(ui);
             } else {
-                self.theme_animator.animate(ctx);
+                self.theme_animator.animate(ui);
             }
 
             ui.horizontal(|ui| {
@@ -246,7 +244,7 @@ impl App for MainWindow {
                     }
                 }
                 // Ensure it does not wait for an event on the app to load the new rows
-                ctx.request_repaint();
+                ui.request_repaint();
             }
         });
     }
