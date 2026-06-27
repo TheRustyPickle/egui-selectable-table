@@ -150,7 +150,7 @@ impl AutoScroll {
                 // Scale the speed by distance, with a cap at max_speed
                 let speed_factor = max_speed * (distance / 100.0).clamp(0.1, 1.0);
 
-                self.scroll_offset += direction * speed_factor;
+                self.scroll_offset = direction.mul_add(speed_factor, self.scroll_offset);
 
                 // Ensure scroll offset doesn't go negative
                 if self.scroll_offset < 0.0 {

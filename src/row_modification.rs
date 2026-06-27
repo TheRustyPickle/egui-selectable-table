@@ -1,4 +1,4 @@
-use egui::ahash::{HashMap, HashSet, HashSetExt};
+use ahash::{HashMap, HashSet, HashSetExt};
 use rayon::prelude::*;
 use std::hash::Hash;
 
@@ -79,6 +79,54 @@ where
         to_return
     }
 
+    /// Modify a single row by its ID
+    ///
+    /// Changes go to the source-of-truth row storage. Call [`recreate_rows`](SelectableTable::recreate_rows)
+    /// afterwards to reflect the change in the UI, or rely on `auto_reload`.
+    ///
+    /// # Example:
+    /// ```rust,ignore
+    /// table.update_row(42, |row| { row.name = "new name".into(); });
+    /// ```
+    pub fn update_row(&mut self, id: i64, f: impl FnOnce(&mut Row)) {
+        self.add_modify_row(|rows| {
+            if let Some(row) = rows.get_mut(&id) {
+                f(&mut row.row_data);
+            }
+            None
+        });
+    }
+
+    /// Modify only the rows currently displayed in the UI.
+    ///
+    /// This provides direct access to the currently formatted rows for lightweight updates.
+    ///
+    /// # Important:
+    /// - This does **not** require calling [`recreate_rows`](SelectableTable::recreate_rows) to reflect changes in the UI.
+    /// - **Do not delete rows** from inside this closure.
+    /// - Changes **evaporate** on the next [`recreate_rows`](SelectableTable::recreate_rows) call.
+    ///   To persist changes, also call [`update_row`](Self::update_row) or [`add_modify_row`](Self::add_modify_row).
+    /// - Does not contribute toward `auto_reload` count.
+    ///
+    /// # When to use:
+    /// - When you need a modification visible immediately without an expensive recreate.
+    ///
+    /// # Example:
+    /// ```rust,ignore
+    /// table.patch_visible_row(|formatted_rows, indexed_ids| {
+    ///     let row_id = 0;
+    ///     let target_index = indexed_ids.get(&row_id).unwrap();
+    ///     let row = formatted_rows.get_mut(*target_index).unwrap();
+    ///     row.row_data.name = "updated".into();
+    /// });
+    /// ```
+    pub fn patch_visible_row<Fn>(&mut self, mut f: Fn)
+    where
+        Fn: FnMut(&mut Vec<SelectableRow<Row, F>>, &HashMap<i64, usize>),
+    {
+        f(&mut self.formatted_rows, &self.indexed_ids);
+    }
+
     /// Modify only the rows currently displayed in the UI.
     ///
     /// This provides direct access to the currently formatted rows for lightweight updates.
@@ -119,6 +167,7 @@ where
     ///     // Safely modify row contents here
     /// });
     /// ```
+    #[deprecated = "use `patch_visible_row` instead"]
     pub fn modify_shown_row<Fn>(&mut self, mut rows: Fn)
     where
         Fn: FnMut(&mut Vec<SelectableRow<Row, F>>, &HashMap<i64, usize>),

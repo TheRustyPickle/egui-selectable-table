@@ -9,9 +9,9 @@ mod row_selection;
 #[cfg_attr(docsrs, doc(cfg(feature = "fuzzy-matching")))]
 mod fuzzy_matcher;
 
+use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use auto_reload::AutoReload;
 pub use auto_scroll::AutoScroll;
-use egui::ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use egui::{Event, Key, Label, Response, ScrollArea, Sense, Ui};
 use egui_extras::{Column, TableBuilder, TableRow};
 use std::cmp::Ordering;
@@ -589,6 +589,40 @@ where
         self.all_columns[self.all_columns.len() - 1].clone()
     }
 
+    /// Returns the row ID to use as the anchor for shift+click range selection.
+    /// Uses the first selected row (by display order) if any, otherwise the first visible row.
+    fn anchor_row_id(&self) -> i64 {
+        if self.active_rows.is_empty() || self.formatted_rows.is_empty() {
+            return 0;
+        }
+        let mut min_idx = usize::MAX;
+        let mut anchor = 0;
+        for id in &self.active_rows {
+            if let Some(idx) = self.indexed_ids.get(id)
+                && *idx < min_idx
+            {
+                min_idx = *idx;
+                anchor = *id;
+            }
+        }
+        anchor
+    }
+
+    /// Returns the column to use as the anchor for shift+click range selection.
+    /// Uses the first column in `active_columns` (by configured order) if any,
+    /// otherwise the first column in the table.
+    fn anchor_column(&self) -> &F {
+        if self.active_columns.is_empty() {
+            return &self.all_columns[0];
+        }
+        for col in &self.all_columns {
+            if self.active_columns.contains(col) {
+                return col;
+            }
+        }
+        &self.all_columns[0]
+    }
+
     /// Convert a number to a column value
     fn column_to_num(&self, column: &F) -> usize {
         *self
@@ -604,16 +638,6 @@ where
             self.all_columns[0].clone()
         } else {
             self.all_columns[current_column_num + 1].clone()
-        }
-    }
-
-    /// Get the previous column of the provided column
-    fn previous_column(&self, column: &F) -> F {
-        let current_column_num = self.column_to_num(column);
-        if current_column_num == 0 {
-            self.all_columns[self.all_columns.len() - 1].clone()
-        } else {
-            self.all_columns[current_column_num - 1].clone()
         }
     }
 
@@ -648,13 +672,31 @@ where
                 }
 
                 if resp.clicked() {
-                    // If CTRL is not pressed down and the mouse right click is not pressed, unselect all cells
-                    if !ui.ctx().input(|i| i.modifiers.ctrl)
-                        && !ui.ctx().input(|i| i.pointer.secondary_clicked())
-                    {
-                        self.unselect_all();
+                    let shift = ui.ctx().input(|i| i.modifiers.shift);
+                    let ctrl = ui.ctx().input(|i| i.modifiers.ctrl);
+                    let secondary = ui.ctx().input(|i| i.pointer.secondary_clicked());
+
+                    if shift {
+                        let anchor_id = self.anchor_row_id();
+                        let anchor_col = self.anchor_column().clone();
+                        if !ctrl && !secondary {
+                            self.unselect_all();
+                        }
+                        self.select_rectangle(
+                            anchor_id,
+                            &anchor_col,
+                            row_data.id,
+                            column_name,
+                            ctrl,
+                        );
+                    } else {
+                        // If CTRL is not pressed down and the mouse right click is not pressed, unselect all cells
+                        // Right click for context menu
+                        if !ctrl && !secondary {
+                            self.unselect_all();
+                        }
+                        self.select_single_row_cell(row_data.id, column_name);
                     }
-                    self.select_single_row_cell(row_data.id, column_name);
                 }
 
                 if ui.ui_contains_pointer()
