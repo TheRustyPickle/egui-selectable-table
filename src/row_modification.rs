@@ -1,4 +1,4 @@
-use egui::ahash::{HashMap, HashSet, HashSetExt};
+use ahash::{HashMap, HashSet, HashSetExt};
 use rayon::prelude::*;
 use std::hash::Hash;
 

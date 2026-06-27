@@ -1,11 +1,12 @@
+use eframe::egui::scroll_area::DragScroll;
 use eframe::{App, CreationContext, Frame, egui};
-use egui::ahash::{HashSet, HashSetExt};
 use egui::{Align, Button, CentralPanel, Layout, Slider, TextEdit, ThemePreference, Ui, Visuals};
 use egui_extras::Column;
 use egui_selectable_table::{
     AutoScroll, ColumnOperations, ColumnOrdering, SelectableRow, SelectableTable, SortOrder,
 };
 use egui_theme_lerp::ThemeAnimator;
+use std::collections::HashSet;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
 
@@ -76,7 +77,7 @@ impl App for MainWindow {
             "☀"
         };
 
-        CentralPanel::default().show_inside(ui, |ui| {
+        CentralPanel::default().show(ui, |ui| {
             if self.theme_animator.anim_id.is_none() {
                 self.theme_animator.create_id(ui);
             } else {
@@ -201,11 +202,10 @@ impl App for MainWindow {
 
             self.table.show_ui(ui, |table| {
                 let mut table = table
-                    .drag_to_scroll(false)
+                    .drag_to_scroll(DragScroll::Never)
                     .striped(true)
                     .resizable(true)
                     .cell_layout(Layout::left_to_right(Align::Center))
-                    .drag_to_scroll(false)
                     .auto_shrink([false; 2])
                     .min_scrolled_height(0.0);
 

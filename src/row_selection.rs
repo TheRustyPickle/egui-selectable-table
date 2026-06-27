@@ -1,5 +1,5 @@
+use ahash::{HashMap, HashMapExt, HashSet};
 use egui::Ui;
-use egui::ahash::{HashMap, HashMapExt, HashSet};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use std::fmt::Write as _;
 use std::hash::Hash;

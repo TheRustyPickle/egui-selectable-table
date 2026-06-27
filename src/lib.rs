@@ -9,9 +9,9 @@ mod row_selection;
 #[cfg_attr(docsrs, doc(cfg(feature = "fuzzy-matching")))]
 mod fuzzy_matcher;
 
+use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use auto_reload::AutoReload;
 pub use auto_scroll::AutoScroll;
-use egui::ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use egui::{Event, Key, Label, Response, ScrollArea, Sense, Ui};
 use egui_extras::{Column, TableBuilder, TableRow};
 use std::cmp::Ordering;
