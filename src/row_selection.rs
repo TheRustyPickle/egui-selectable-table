@@ -22,6 +22,58 @@ where
         + ColumnOrdering<Row>,
     Conf: Default,
 {
+    /// Selects all cells in the rectangle from (`start_id`, `start_col`) to
+    /// (`end_id`, `end_col`). Used by shift+click range selection.
+    /// For Ctrl+drag, `extend` is used to union with existing selections.
+    pub(crate) fn select_rectangle(
+        &mut self,
+        start_id: i64,
+        start_col: &F,
+        end_id: i64,
+        end_col: &F,
+        extend: bool,
+    ) {
+        let Some(start_idx) = self.indexed_ids.get(&start_id).copied() else {
+            return;
+        };
+        let Some(end_idx) = self.indexed_ids.get(&end_id).copied() else {
+            return;
+        };
+
+        let start_col_num = self.column_to_num(start_col);
+        let end_col_num = self.column_to_num(end_col);
+        let col_min = start_col_num.min(end_col_num);
+        let col_max = start_col_num.max(end_col_num);
+        let row_min = start_idx.min(end_idx);
+        let row_max = start_idx.max(end_idx);
+
+        let col_range: HashSet<F> = (col_min..=col_max)
+            .map(|i| self.all_columns[i].clone())
+            .collect();
+
+        if extend {
+            for col in &col_range {
+                self.active_columns.insert(col.clone());
+            }
+        } else {
+            self.active_columns.clone_from(&col_range);
+        }
+
+        for row_idx in row_min..=row_max {
+            let Some(row) = self.formatted_rows.get_mut(row_idx) else {
+                continue;
+            };
+            if self.select_full_row {
+                row.selected_columns.extend(self.all_columns.clone());
+            } else if extend {
+                row.selected_columns.extend(col_range.clone());
+            } else {
+                row.selected_columns.clone_from(&col_range);
+            }
+            self.active_rows.insert(row.id);
+        }
+    }
+
     pub(crate) fn select_single_row_cell(&mut self, id: i64, column_name: &F) {
         self.active_columns.insert(column_name.clone());
         self.active_rows.insert(id);
