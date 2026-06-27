@@ -607,16 +607,6 @@ where
         }
     }
 
-    /// Get the previous column of the provided column
-    fn previous_column(&self, column: &F) -> F {
-        let current_column_num = self.column_to_num(column);
-        if current_column_num == 0 {
-            self.all_columns[self.all_columns.len() - 1].clone()
-        } else {
-            self.all_columns[current_column_num - 1].clone()
-        }
-    }
-
     /// Builds the table's Body section
     fn handle_table_body(&mut self, mut row: TableRow, row_data: &SelectableRow<Row, F>) {
         for column_name in &self.all_columns.clone() {
