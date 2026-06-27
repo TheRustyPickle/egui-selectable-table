@@ -344,7 +344,7 @@ impl ColumnOperations<TableRow, TableColumns, Config> for TableColumns {
             None
         });
         if !config.counting_ongoing {
-            table.modify_shown_row(|t, index| {
+            table.patch_visible_row(|t, index| {
                 let target_index = index.get(&row_id).unwrap();
                 let target_row = t.get_mut(*target_index).unwrap();
                 target_row.row_data.create_count += 1;
