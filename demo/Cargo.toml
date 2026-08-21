@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-eframe = "0.35.0"
-egui_extras = "0.35.0"
+eframe = "0.36.1"
+egui_extras = "0.36.1"
 egui-selectable-table = { path = "..", features = ["fuzzy-matching"] }
-egui-theme-lerp = "0.6.0"
+egui-theme-lerp = "0.7.0"
 strum = "0.28.0"
 strum_macros = "0.28.0"
 
