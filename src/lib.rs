@@ -423,7 +423,8 @@ where
                             self.build_body(row, index);
                         });
                     });
-                let scroll_offset = output.state.offset.y;
+
+                let scroll_offset = output.state.unclamped_offset().y;
                 self.update_scroll_offset(scroll_offset);
             });
         } else {
@@ -452,7 +453,7 @@ where
                         self.build_body(row, index);
                     });
                 });
-            let scroll_offset = output.state.offset.y;
+            let scroll_offset = output.state.unclamped_offset().y;
             self.update_scroll_offset(scroll_offset);
         }
     }
