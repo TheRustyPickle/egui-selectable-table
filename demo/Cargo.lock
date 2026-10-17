@@ -867,7 +867,7 @@ dependencies = [
 
 [[package]]
 name = "egui-selectable-table"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "ahash",
  "egui",
