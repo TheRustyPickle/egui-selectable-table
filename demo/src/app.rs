@@ -43,7 +43,7 @@ impl MainWindow {
             .auto_reload(10_000)
             .auto_scroll()
             .horizontal_scroll()
-            .no_ctrl_a_capture();
+            .rayon_threshold(10000);
 
         MainWindow {
             search_text: String::new(),

@@ -20,14 +20,43 @@ A library for [egui](https://github.com/emilk/egui) to create tables with dragga
 
 ## Optional Features
 
-This crate includes an optional `fuzzy-matching` feature that enables fuzzy row search using the [nucleo-matcher](https://crates.io/crates/nucleo-matcher) crate.
+### Fuzzy matching
+
+This crate includes an optional `fuzzy-matching` feature that enables fuzzy row
+search using the [nucleo-matcher](https://crates.io/crates/nucleo-matcher) crate.
 
 To enable fuzzy matching:
 
 ```toml
-[dependencies]
-egui-selectable-table = { version = "0.4.0", features = ["fuzzy-matching"] }
+egui-selectable-table = { version = "0.x.0", features = ["fuzzy-matching"] }
 ```
+
+### Rayon
+
+The `rayon` feature uses parallel iterators for sorting and other bulk row
+operations. It only kicks in when the number of rows exceeds a threshold
+(default 5000, change with `.rayon_threshold(n)`).
+
+```toml
+egui-selectable-table = { version = "0.x.0", features = ["rayon"] }
+```
+
+Rayon has a fixed overhead, so it is slower on small tables and only pays off
+once there are enough rows. The following table contains the rough numbers with
+and without rayon by the number of rows in my own machine.
+
+| Rows | Sequential (µs) | Rayon (µs) |
+|---|---|---|
+| 100 | 11 | 50 |
+| 500 | 86 | 177 |
+| 1,000 | 210 | 278 |
+| 2,000 | 327 | 414 |
+| 5,000 | 889 | 666 |
+| 10,000 | 2,620 | 1,055 |
+| 20,000 | 4,522 | 1,746 |
+| 50,000 | 13,473 | 10,439 |
+| 100,000 | 32,357 | 14,182 |
+| 500,000 | 269,277 | 158,546 |
 
 ## Usage
 
@@ -113,7 +142,8 @@ The demo is accessible online via [this link](https://therustypickle.github.io/e
 
 ## Contributing
 
-Contributions, issues, and feature requests are welcome! If you'd like to contribute, please open a pull request.
+Contributions, issues, and feature requests are welcome! If you'd like to
+contribute, please open a pull request.
 
 ## License
 

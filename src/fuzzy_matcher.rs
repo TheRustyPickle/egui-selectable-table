@@ -1,9 +1,8 @@
 use nucleo_matcher::pattern::{CaseMatching, Normalization, Pattern};
 use nucleo_matcher::{Matcher, Utf32Str};
-use rayon::prelude::*;
 use std::hash::Hash;
 
-use crate::{ColumnOperations, ColumnOrdering, SelectableRow, SelectableTable, SortOrder};
+use crate::{ColumnOperations, ColumnOrdering, SelectableRow, SelectableTable};
 
 impl<Row, F, Conf> SelectableTable<Row, F, Conf>
 where
@@ -100,19 +99,7 @@ where
         self.active_rows.clear();
         self.active_columns.clear();
 
-        row_data.par_sort_by(|a, b| {
-            let ordering = self.sorted_by.order_by(&a.row_data, &b.row_data);
-            match self.sort_order {
-                SortOrder::Ascending => ordering,
-                SortOrder::Descending => ordering.reverse(),
-            }
-        });
-
-        self.indexed_ids = row_data
-            .par_iter()
-            .enumerate()
-            .map(|(index, row)| (row.id, index))
-            .collect();
+        self.sort_and_index(&mut row_data);
 
         self.formatted_rows = row_data;
     }

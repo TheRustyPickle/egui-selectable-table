@@ -4,14 +4,14 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-eframe = "0.36.1"
-egui_extras = "0.36.1"
-egui-selectable-table = { path = "..", features = ["fuzzy-matching"] }
-egui-theme-lerp = "0.7.0"
+eframe = "0.37.0"
+egui_extras = "0.37.0"
+egui-selectable-table = { path = "..", features = ["fuzzy-matching", "rayon"] }
+egui-theme-lerp = "0.8.0"
 strum = "0.28.0"
 strum_macros = "0.28.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4"
-web-sys = "0.3.92"
+web-sys = "0.3.106"
 getrandom = { version = "0.3.4", features = ["wasm_js"] }

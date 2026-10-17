@@ -254,6 +254,9 @@ where
     matcher: Matcher,
     /// Whether to capture Ctrl+A for selecting all rows
     no_ctrl_a_capture: bool,
+    /// Row count above which rayon is used for parallel processing
+    #[cfg(feature = "rayon")]
+    rayon_threshold: usize,
 }
 
 impl<Row, F, Conf> SelectableTable<Row, F, Conf>
@@ -316,6 +319,8 @@ where
             #[cfg(feature = "fuzzy-matching")]
             matcher: Matcher::default(),
             no_ctrl_a_capture: false,
+            #[cfg(feature = "rayon")]
+            rayon_threshold: 5000,
         }
     }
 
@@ -423,7 +428,8 @@ where
                             self.build_body(row, index);
                         });
                     });
-                let scroll_offset = output.state.offset.y;
+
+                let scroll_offset = output.state.unclamped_offset().y;
                 self.update_scroll_offset(scroll_offset);
             });
         } else {
@@ -452,7 +458,7 @@ where
                         self.build_body(row, index);
                     });
                 });
-            let scroll_offset = output.state.offset.y;
+            let scroll_offset = output.state.unclamped_offset().y;
             self.update_scroll_offset(scroll_offset);
         }
     }
@@ -781,6 +787,26 @@ where
     #[must_use]
     pub const fn horizontal_scroll(mut self) -> Self {
         self.horizontal_scroll = true;
+        self
+    }
+
+    /// Sets the number of rows above which rayon is used for sorting and other bulk operations.
+    /// Smaller tables are processed sequentially since thread overhead outweighs the gain.
+    /// Defaults to 5000.
+    ///
+    /// Rayon is slower than sequential processing on small tables and starts to pay off
+    /// somewhere around 3,000-5,000 rows. See the README for benchmark numbers.
+    ///
+    /// # Example:
+    /// ```rust,ignore
+    /// let table = SelectableTable::new(columns)
+    ///     .rayon_threshold(5000);
+    /// ```
+    #[cfg(feature = "rayon")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "rayon")))]
+    #[must_use]
+    pub const fn rayon_threshold(mut self, threshold: usize) -> Self {
+        self.rayon_threshold = threshold;
         self
     }
 

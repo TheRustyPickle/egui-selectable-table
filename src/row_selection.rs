@@ -1,6 +1,9 @@
 use ahash::{HashMap, HashMapExt, HashSet};
 use egui::Ui;
+
+#[cfg(feature = "rayon")]
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+
 use std::fmt::Write as _;
 use std::hash::Hash;
 
@@ -462,8 +465,7 @@ where
     }
 
     /// Retrieves the currently selected rows but in no particular order. Can be faster than
-    /// [`get_selected_rows`](#method.get_selected_rows) as it uses rayon for parallel processing
-    /// and only checks the active rows instead of every single row.
+    /// [`get_selected_rows`](#method.get_selected_rows) as it only checks the active rows instead of every single row.
     ///
     /// This method returns a vector of the rows that have one or more columns selected.
     ///
@@ -482,21 +484,25 @@ where
             self.active_columns.extend(self.all_columns.clone());
         }
 
-        self.active_rows
-            .par_iter()
-            .map(|row_id| {
-                let row_index = self
-                    .indexed_ids
-                    .get(row_id)
-                    .expect("Could not get id index");
-                let target_row = self
-                    .formatted_rows
-                    .get(*row_index)
-                    .expect("Could not get row");
+        let get_row = |row_id: &i64| {
+            let row_index = self
+                .indexed_ids
+                .get(row_id)
+                .expect("Could not get id index");
+            let target_row = self
+                .formatted_rows
+                .get(*row_index)
+                .expect("Could not get row");
 
-                target_row.clone()
-            })
-            .collect()
+            target_row.clone()
+        };
+
+        #[cfg(feature = "rayon")]
+        if self.use_rayon(self.active_rows.len()) {
+            return self.active_rows.par_iter().map(get_row).collect();
+        }
+
+        self.active_rows.iter().map(get_row).collect()
     }
 
     /// Copies selected cells to the system clipboard in a tabular format.

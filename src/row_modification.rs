@@ -1,6 +1,8 @@
 use ahash::{HashMap, HashSet, HashSetExt};
-use rayon::prelude::*;
 use std::hash::Hash;
+
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
 
 use crate::{ColumnOperations, ColumnOrdering, SelectableRow, SelectableTable, SortOrder};
 
@@ -215,24 +217,54 @@ where
 
     /// Sort the rows to the current sorting order and column and save them for later reuse
     pub(crate) fn sort_rows(&mut self) {
-        let mut row_data: Vec<SelectableRow<Row, F>> =
-            self.rows.par_iter().map(|(_, v)| v.clone()).collect();
+        let mut row_data: Vec<SelectableRow<Row, F>> = self.clone_rows();
+        self.sort_and_index(&mut row_data);
+        self.formatted_rows = row_data;
+    }
 
-        row_data.par_sort_by(|a, b| {
-            let ordering = self.sorted_by.order_by(&a.row_data, &b.row_data);
-            match self.sort_order {
+    /// Whether the given number of rows is large enough to use rayon
+    #[cfg(feature = "rayon")]
+    pub(crate) const fn use_rayon(&self, len: usize) -> bool {
+        len > self.rayon_threshold
+    }
+
+    fn clone_rows(&self) -> Vec<SelectableRow<Row, F>> {
+        #[cfg(feature = "rayon")]
+        if self.use_rayon(self.rows.len()) {
+            return self.rows.par_iter().map(|(_, v)| v.clone()).collect();
+        }
+        self.rows.values().cloned().collect()
+    }
+
+    /// Sorts `row_data` by the current sort settings and rebuilds `indexed_ids` from it
+    pub(crate) fn sort_and_index(&mut self, row_data: &mut [SelectableRow<Row, F>]) {
+        let sorted_by = &self.sorted_by;
+        let sort_order = self.sort_order;
+        let compare = |a: &SelectableRow<Row, F>, b: &SelectableRow<Row, F>| {
+            let ordering = sorted_by.order_by(&a.row_data, &b.row_data);
+            match sort_order {
                 SortOrder::Ascending => ordering,
                 SortOrder::Descending => ordering.reverse(),
             }
-        });
+        };
 
-        let indexed_data = row_data
-            .par_iter()
+        #[cfg(feature = "rayon")]
+        if self.use_rayon(row_data.len()) {
+            row_data.par_sort_by(compare);
+            self.indexed_ids = row_data
+                .par_iter()
+                .enumerate()
+                .map(|(index, row)| (row.id, index))
+                .collect();
+            return;
+        }
+
+        row_data.sort_by(compare);
+
+        self.indexed_ids = row_data
+            .iter()
             .enumerate()
             .map(|(index, row)| (row.id, index))
             .collect();
-
-        self.indexed_ids = indexed_data;
-        self.formatted_rows = row_data;
     }
 }
